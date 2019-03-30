@@ -12,16 +12,20 @@ using MyMiniOrm.SqlBuilders;
 
 namespace MyMiniOrm
 {
-    public class MyDb
+    public partial class MyDb
     {
         private readonly string _connectionString;
 
-        public MyDb(string connectionString)
+        private readonly string _prefix;
+
+        public MyDb(string connectionString, string prefix = "@")
         {
             _connectionString = connectionString;
+            _prefix = prefix;
         }
 
-        public MyQueryable<T> Query<T>() where T : class , IEntity, new()
+        #region 查找
+        public MyQueryable<T> Query<T>() where T : class, IEntity, new()
         {
             return new MyQueryable<T>(_connectionString);
         }
@@ -31,7 +35,7 @@ namespace MyMiniOrm
             return new MyQueryable<T>(_connectionString).Where(t => t.Id == id).FirstOrDefault();
         }
 
-        public T Load<T>(Expression<Func<T, bool>> where = null, params Expression<Func<T, object>>[] orderBy) where T : class , new ()
+        public T Load<T>(Expression<Func<T, bool>> where = null, params Expression<Func<T, object>>[] orderBy) where T : class, new()
         {
             var query = new MyQueryable<T>(_connectionString);
             if (where != null)
@@ -90,28 +94,23 @@ namespace MyMiniOrm
             }
 
             return query.ToPageList(pageIndex, pageSize, out recordCount);
-        }
+        } 
+        #endregion
 
         #region 创建
         public int Insert<T>(T entity) where T : class, IEntity, new()
         {
             var entityInfo = MyEntityContainer.Get(typeof(T));
 
-            var sb = new StringBuilder("INSERT INTO ");
-            sb.Append($"[{entityInfo.TableName}] (");
-            sb.Append(string.Join(",",
-                entityInfo.Properties.Where(p => !p.InsertIgnore).Select(p => $"[{p.FieldName}]")));
-            sb.Append(") VALUES (");
-            sb.Append(string.Join(",",
-                entityInfo.Properties.Where(p => !p.InsertIgnore).Select(p => $"@{p.Name}")));
-            sb.Append(");SELECT SCOPE_IDENTITY();");
+            var sqlBuilder = new SqlServerSqlBuilder();
+            var sql = sqlBuilder.Insert(entityInfo);
 
             var parameterList = entityInfo
                 .Properties
                 .Where(p => !p.InsertIgnore)
-                .Select(p => new SqlParameter($"@{p.Name}", p.PropertyInfo.GetValue(entity)));
+                .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity)));
 
-            var command = new SqlCommand(sb.ToString());
+            var command = new SqlCommand(sql);
             command.Parameters.AddRange(parameterList.ToArray());
 
             using (var conn = new SqlConnection(_connectionString))
@@ -123,18 +122,51 @@ namespace MyMiniOrm
             }
         }
 
+        public int InsertIfNotExist<T>(T entity, Expression<Func<T, bool>> where) where T : class, IEntity, new()
+        {
+            if (where == null)
+            {
+                return Insert<T>(entity);
+            }
+            else
+            {
+                var entityInfo = MyEntityContainer.Get(typeof(T));
+                var whereExpressionVisitor = new WhereExpressionVisitor<T>(entityInfo);
+                whereExpressionVisitor.Visit(where);
+
+                var condition = whereExpressionVisitor.GetCondition();
+                var parameters = whereExpressionVisitor.GetParameters().ToSqlParameters();
+
+                condition = string.IsNullOrWhiteSpace(condition) ? "1=1" : condition;
+
+                var sqlBuilder = new SqlServerSqlBuilder();
+                var sql = sqlBuilder.InsertIfNotExists(entityInfo, condition);
+
+                parameters.AddRange(
+                    entityInfo
+                        .Properties
+                        .Where(p => !p.InsertIgnore)
+                        .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity))));
+
+                var command = new SqlCommand(sql);
+                command.Parameters.AddRange(parameters.ToArray());
+
+                using (var conn = new SqlConnection(_connectionString))
+                {
+                    conn.Open();
+                    command.Connection = conn;
+                    entity.Id = Convert.ToInt32(command.ExecuteScalar().ToString());
+                    return entity.Id;
+                }
+            }
+        }
+
         public int Insert<T>(List<T> entityList) where T : class, IEntity, new()
         {
             var entityInfo = MyEntityContainer.Get(typeof(T));
 
-            var sb = new StringBuilder("INSERT INTO ");
-            sb.Append($"[{entityInfo.TableName}] (");
-            sb.Append(string.Join(",",
-                entityInfo.Properties.Where(p => !p.InsertIgnore).Select(p => $"[{p.FieldName}]")));
-            sb.Append(") VALUES (");
-            sb.Append(string.Join(",",
-                entityInfo.Properties.Where(p => !p.InsertIgnore).Select(p => $"@{p.Name}")));
-            sb.Append(");SELECT SCOPE_IDENTITY();;");
+            var sqlBuilder = new SqlServerSqlBuilder();
+            var sql = sqlBuilder.Insert(entityInfo);
 
             var count = 0;
 
@@ -147,12 +179,12 @@ namespace MyMiniOrm
                     {
                         foreach (var entity in entityList)
                         {
-                            using (var command = new SqlCommand(sb.ToString(), conn, trans))
+                            using (var command = new SqlCommand(sql, conn, trans))
                             {
                                 command.Parameters.AddRange(entityInfo
                                     .Properties
                                     .Where(p => !p.InsertIgnore)
-                                    .Select(p => new SqlParameter($"@{p.Name}", p.PropertyInfo.GetValue(entity)))
+                                    .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity)))
                                     .ToArray());
                                 entity.Id = Convert.ToInt32(command.ExecuteScalar());
                                 count++;
@@ -177,20 +209,16 @@ namespace MyMiniOrm
         {
             var entityInfo = MyEntityContainer.Get(typeof(T));
 
-            var sb = new StringBuilder("UPDATE ");
-            sb.Append($"[{entityInfo.TableName}] SET ");
-            sb.Append(string.Join(",",
-                entityInfo.Properties.Where(p => !p.UpdateIgnore).Select(p => $"[{p.FieldName}]=@{p.Name}")));
-            sb.Append($" WHERE [{entityInfo.KeyColumn}]=@Id");
+            var sqlBuilder = new SqlServerSqlBuilder();
+            var sql = sqlBuilder.Update(entityInfo, "");
 
             var parameterList = entityInfo
                 .Properties
-                .Where(p => !p.UpdateIgnore)
-                .Select(p => new SqlParameter($"@{p.Name}", p.PropertyInfo.GetValue(entity)));
+                .Where(p => !p.UpdateIgnore || p.IsKey)
+                .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity)));
 
-            var command = new SqlCommand(sb.ToString());
+            var command = new SqlCommand(sql);
             command.Parameters.AddRange(parameterList.ToArray());
-            command.Parameters.AddWithValue("@Id", entity.Id);
 
             using (var conn = new SqlConnection(_connectionString))
             {
@@ -204,11 +232,8 @@ namespace MyMiniOrm
         {
             var entityInfo = MyEntityContainer.Get(typeof(T));
 
-            var sb = new StringBuilder("UPDATE ");
-            sb.Append($"[{entityInfo.TableName}] SET ");
-            sb.Append(string.Join(",",
-                entityInfo.Properties.Where(p => !p.UpdateIgnore).Select(p => $"[{p.FieldName}]=@{p.Name}")));
-            sb.Append($" WHERE [{entityInfo.KeyColumn}]=@Id");
+            var sqlBuilder = new SqlServerSqlBuilder();
+            var sql = sqlBuilder.Update(entityInfo, "");
 
             var count = 0;
 
@@ -221,20 +246,19 @@ namespace MyMiniOrm
                     {
                         foreach (var entity in entityList)
                         {
-                            using (var command = new SqlCommand(sb.ToString(), conn, trans))
+                            using (var command = new SqlCommand(sql, conn, trans))
                             {
                                 command.Parameters.AddRange(entityInfo
                                     .Properties
-                                    .Where(p => !p.UpdateIgnore)
-                                    .Select(p => new SqlParameter($"@{p.Name}", p.PropertyInfo.GetValue(entity)))
+                                    .Where(p => !p.UpdateIgnore || p.IsKey)
+                                    .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity)))
                                     .ToArray());
-                                command.Parameters.AddWithValue("@Id", entity.Id);
                                 count += command.ExecuteNonQuery();
                             }
                         }
                         trans.Commit();
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         trans.Rollback();
                         count = 0;
@@ -244,125 +268,6 @@ namespace MyMiniOrm
 
             return count;
         }
-
-        public int Update<T>(int id, DbKvs kvs)
-        {
-            var entityInfo = MyEntityContainer.Get(typeof(T));
-            var setProperties = kvs.Where(kv => kv.Key != "Id").Select(kv => kv.Key);
-            var includeProperties = entityInfo.Properties.Where(p => setProperties.Contains(p.Name)).ToList();
-            if (includeProperties.Count == 0)
-            {
-                return 0;
-            }
-
-            var sql =
-                $"UPDATE [{entityInfo.TableName}] SET {string.Join(",", includeProperties.Select(p => $"{p.FieldName}=@{p.Name}"))} WHERE Id=@Id";
-            var parameters = kvs.ToSqlParameters();
-            parameters.Add(new SqlParameter("@Id", id));
-            using (var conn = new SqlConnection(_connectionString))
-            {
-                conn.Open();
-                var command = new SqlCommand(sql, conn);
-                command.Parameters.AddRange(parameters.ToArray());
-                return command.ExecuteNonQuery();
-            }
-        }
-
-        public int Update<T>(DbKvs kvs, Expression<Func<T, bool>> expression = null)
-        {
-            var entityInfo = MyEntityContainer.Get(typeof(T));
-            var setProperties = kvs.Where(kv => kv.Key != "Id").Select(kv => kv.Key);
-            var includeProperties = entityInfo.Properties.Where(p => setProperties.Contains(p.Name)).ToList();
-            if (includeProperties.Count == 0)
-            {
-                return 0;
-            }
-
-            string sql;
-            List<SqlParameter> parameters;
-            if (expression == null)
-            {
-                sql =
-                    $"UPDATE [{entityInfo.TableName}] SET {string.Join(",", includeProperties.Select(p => $"{p.FieldName}=@{p.Name}"))} WHERE Id=@Id";
-                parameters = kvs.ToSqlParameters();
-            }
-            else
-            {
-                var whereExpressionVisitor = new WhereExpressionVisitor<T>();
-                whereExpressionVisitor.Visit(expression);
-                var where = whereExpressionVisitor.GetCondition();
-                var whereParameters = whereExpressionVisitor.GetParameters().ToSqlParameters();
-                parameters = kvs.ToSqlParameters();
-                parameters.AddRange(whereParameters);
-
-                where = string.IsNullOrWhiteSpace(where) ? "1=1" : where;
-
-                sql =
-                    $"UPDATE [{entityInfo.TableName}] SET {string.Join(",", includeProperties.Select(p => $"{p.FieldName}=@{p.Name}"))} WHERE {where}";
-            }
-
-            using (var conn = new SqlConnection(_connectionString))
-            {
-                conn.Open();
-                var command = new SqlCommand(sql, conn);
-                command.Parameters.AddRange(parameters.ToArray());
-                return command.ExecuteNonQuery();
-            }
-        }
-
-        public int Update<T>(T entity, IEnumerable<string> includes) where T : IEntity
-        {
-            var entityInfo = MyEntityContainer.Get(typeof(T));
-            var includeProperties = entityInfo.Properties.Where(p => includes.Contains(p.Name) && p.Name != "Id").ToList();
-            if (includeProperties.Count == 0)
-            {
-                return 0;
-            }
-
-            var sql =
-                $"UPDATE [{entityInfo.TableName}] SET {string.Join(",", includeProperties.Select(p => $"{p.FieldName}=@{p.Name}"))} WHERE Id=@Id";
-            var parameters = new List<SqlParameter> {new SqlParameter("@Id", entity.Id)};
-
-            foreach (var property in includeProperties)
-            {
-                parameters.Add(new SqlParameter($"@{property.Name}", property.PropertyInfo.GetValue(entity)));
-            }
-
-            using (var conn = new SqlConnection(_connectionString))
-            {
-                conn.Open();
-                var command = new SqlCommand(sql, conn);
-                command.Parameters.AddRange(parameters.ToArray());
-                return command.ExecuteNonQuery();
-            }
-        }
-
-        public int UpdateIgnore<T>(T entity, IEnumerable<string> ignore) where T : IEntity
-        {
-            var entityInfo = MyEntityContainer.Get(typeof(T));
-            var includeProperties = entityInfo.Properties.Where(p => !ignore.Contains(p.Name) && p.Name != "Id").ToList();
-            if (includeProperties.Count == 0)
-            {
-                return 0;
-            }
-
-            var sql =
-                $"UPDATE [{entityInfo.TableName}] SET {string.Join(",", includeProperties.Select(p => $"{p.FieldName}=@{p.Name}"))} WHERE Id=@Id";
-            var parameters = new List<SqlParameter> { new SqlParameter("@Id", entity.Id) };
-
-            foreach (var property in includeProperties)
-            {
-                parameters.Add(new SqlParameter($"@{property.Name}", property.PropertyInfo.GetValue(entity)));
-            }
-
-            using (var conn = new SqlConnection(_connectionString))
-            {
-                conn.Open();
-                var command = new SqlCommand(sql, conn);
-                command.Parameters.AddRange(parameters.ToArray());
-                return command.ExecuteNonQuery();
-            }
-        }
         #endregion
 
         #region 删除
@@ -370,12 +275,12 @@ namespace MyMiniOrm
         public int Delete<T>(int id) where T : class, IEntity, new()
         {
             var entityInfo = MyEntityContainer.Get(typeof(T));
-            var sql = $"DELETE [{entityInfo.TableName}] WHERE [{entityInfo.KeyColumn}]=@Id";
+            var sql = $"DELETE [{entityInfo.TableName}] WHERE [{entityInfo.KeyColumn}]={_prefix}Id";
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
                 var command = new SqlCommand(sql, conn);
-                command.Parameters.AddWithValue("@Id", id);
+                command.Parameters.AddWithValue($"{_prefix}Id", id);
                 return command.ExecuteNonQuery();
             }
         }
@@ -383,12 +288,12 @@ namespace MyMiniOrm
         public int Delete<T>(IEnumerable<int> idList) where T : class, IEntity, new()
         {
             var entityInfo = MyEntityContainer.Get(typeof(T));
-            var sql = $"EXEC('DELETE [{entityInfo.TableName}] WHERE [{entityInfo.KeyColumn}] in ('+@Ids+')')";
+            var sql = $"EXEC('DELETE [{entityInfo.TableName}] WHERE [{entityInfo.KeyColumn}] in ('+{_prefix}Ids+')')";
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
                 var command = new SqlCommand(sql, conn);
-                command.Parameters.AddWithValue("@Ids", string.Join(",", idList));
+                command.Parameters.AddWithValue($"{_prefix}Ids", string.Join(",", idList));
                 return command.ExecuteNonQuery();
             }
         }
@@ -427,6 +332,17 @@ namespace MyMiniOrm
                     command.Parameters.AddRange(parameters.ToSqlParameters().ToArray());
                     return (int)command.ExecuteScalar();
                 }
+            }
+        }
+        #endregion
+
+        #region 私有方法
+
+        private TResult Exec<TResult>(Func<SqlConnection, TResult> func)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                return func.Invoke(conn);
             }
         }
         #endregion

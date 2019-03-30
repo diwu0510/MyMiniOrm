@@ -145,7 +145,7 @@ namespace MyMiniOrm.SqlBuilders
                 .Append(string.Join(",", columns))
                 .Append(") VALUES (")
                 .Append(string.Join(",", parameters))
-                .Append(");SELECT @@IDENTITY;");
+                .Append(");SELECT SCOPE_IDENTITY();");
             return sb.ToString();
         }
 
