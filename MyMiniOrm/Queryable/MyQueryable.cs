@@ -46,7 +46,8 @@ namespace MyMiniOrm.Queryable
             {
                 var memberExpr = (MemberExpression)expression.Body;
                 if (memberExpr.Expression != null &&
-                    memberExpr.Expression.NodeType == ExpressionType.Parameter)
+                    memberExpr.Expression.NodeType == ExpressionType.Parameter &&
+                    memberExpr.Member.GetType().IsClass)
                 {
                     if (_includeProperties.All(p => p != memberExpr.Member.Name))
                     {
@@ -107,9 +108,7 @@ namespace MyMiniOrm.Queryable
 
             return masterFields;
         }
-
         
-
         public MyQueryable<T> OrderBy<TProperty>(Expression<Func<T, TProperty>> expression) 
         {
             if (expression.Body.NodeType == ExpressionType.MemberAccess)
