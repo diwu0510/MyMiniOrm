@@ -113,6 +113,8 @@ db.Update<Student>(1, DbKvs.New().Add("Name", "张三"));
 var student = db.Load<Student>(1);
 student.Name = student.Name + "测试修改";
 student.ClazzId = 2;
+
+// 注意，下面方法传入的是属性名而不列名
 var count = db.Update<Student>(student, new[] {"Name", "ClazzId"});
 var count2 = db.UpdateIgnore<Student>(student, new[] {"CreateAt"});
 
