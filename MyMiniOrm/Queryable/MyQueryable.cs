@@ -283,7 +283,7 @@ namespace MyMiniOrm.Queryable
             return result;
         }
 
-        public T SingleOrDefault()
+        public T FirstOrDefault()
         {
             var fields = GetFields();
             var from = GetFrom();

@@ -28,7 +28,7 @@ namespace MyMiniOrm
 
         public T Load<T>(int id) where T : class, IEntity, new()
         {
-            return new MyQueryable<T>(_connectionString).Where(t => t.Id == id).SingleOrDefault();
+            return new MyQueryable<T>(_connectionString).Where(t => t.Id == id).FirstOrDefault();
         }
 
         public T Load<T>(Expression<Func<T, bool>> where = null, params Expression<Func<T, object>>[] orderBy) where T : class , new ()
@@ -47,7 +47,7 @@ namespace MyMiniOrm
                 }
             }
 
-            return query.SingleOrDefault();
+            return query.FirstOrDefault();
         }
 
         public List<T> Fetch<T>(Expression<Func<T, bool>> where = null, params Expression<Func<T, object>>[] orderBy) where T : class, new()
@@ -69,7 +69,7 @@ namespace MyMiniOrm
             return query.ToList();
         }
 
-        public List<T> Fetch<T>(int pageIndex,
+        public List<T> PageList<T>(int pageIndex,
             int pageSize,
             out int recordCount,
             Expression<Func<T, bool>> where = null,
@@ -101,10 +101,10 @@ namespace MyMiniOrm
             sb.Append($"[{entityInfo.TableName}] (");
             sb.Append(string.Join(",",
                 entityInfo.Properties.Where(p => !p.InsertIgnore).Select(p => $"[{p.FieldName}]")));
-            sb.Append(" VALUES (");
+            sb.Append(") VALUES (");
             sb.Append(string.Join(",",
                 entityInfo.Properties.Where(p => !p.InsertIgnore).Select(p => $"@{p.Name}")));
-            sb.Append(");SELECT @@IDENTITY;");
+            sb.Append(");SELECT SCOPE_IDENTITY();");
 
             var parameterList = entityInfo
                 .Properties
@@ -118,9 +118,8 @@ namespace MyMiniOrm
             {
                 conn.Open();
                 command.Connection = conn;
-                var id = (int)command.ExecuteScalar();
-                entity.Id = id;
-                return id;
+                entity.Id = Convert.ToInt32(command.ExecuteScalar().ToString());
+                return entity.Id;
             }
         }
 
@@ -132,10 +131,10 @@ namespace MyMiniOrm
             sb.Append($"[{entityInfo.TableName}] (");
             sb.Append(string.Join(",",
                 entityInfo.Properties.Where(p => !p.InsertIgnore).Select(p => $"[{p.FieldName}]")));
-            sb.Append(" VALUES (");
+            sb.Append(") VALUES (");
             sb.Append(string.Join(",",
                 entityInfo.Properties.Where(p => !p.InsertIgnore).Select(p => $"@{p.Name}")));
-            sb.Append(");SELECT @@IDENTITY;");
+            sb.Append(");SELECT SCOPE_IDENTITY();;");
 
             var count = 0;
 
@@ -148,15 +147,14 @@ namespace MyMiniOrm
                     {
                         foreach (var entity in entityList)
                         {
-                            using (var command = new SqlCommand(sb.ToString(), conn))
+                            using (var command = new SqlCommand(sb.ToString(), conn, trans))
                             {
                                 command.Parameters.AddRange(entityInfo
-
                                     .Properties
                                     .Where(p => !p.InsertIgnore)
                                     .Select(p => new SqlParameter($"@{p.Name}", p.PropertyInfo.GetValue(entity)))
                                     .ToArray());
-                                entity.Id = (int)command.ExecuteScalar();
+                                entity.Id = Convert.ToInt32(command.ExecuteScalar());
                                 count++;
                             }
                         }

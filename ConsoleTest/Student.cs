@@ -14,6 +14,8 @@ namespace ConsoleTest
 
         public string Name { get; set; }
 
+        public int ClazzId { get; set; }
+
         public Clazz Clazz { get; set; }
         
         [MyColumn(UpdateIgnore = true)]
