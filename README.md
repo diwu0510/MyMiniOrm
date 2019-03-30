@@ -39,19 +39,14 @@ var db = new MyDb("DataSource=.;Database=Test;USER ID=sa;Password=1234");
 ```
 ### 查询单个实体：
 ```
-// 方法：T Load<T>(int id)
 var student = db.Load<Student>(1);
 
-// 方法：T Load<T>(Expression<Func<T, bool>> where = null, params Expression<Func<T, object>>[] orderBy)
 var student = db.Load<Student>(s => s.Name == "张三");
 ```
 ### 查询多个实体：
 ```
-// 方法：List<T> Fetch<T>(Expression<Func<T, bool>> where = null, params Expression<Func<T, object>>[] orderBy)
 var student = db.Fetch<Student>();
 
-// 方法：List<T> PageList<T>(int pageIndex,int pageSize,out int recordCount,
-//          Expression<Func<T, bool>> where = null,params Expression<Func<T, object>>[] orderBy)
 var student = db.PageList<T>(2, 10, out var recordCount, s => s.Name.Contains("张三"), s=>s.Name);
 ```
 ### Fluent 查询
@@ -74,11 +69,11 @@ var student = new Student
     ClazzId = 1,
     CreateAt = DateTime.Now
 };
-// 会将新产生的Id赋值到student.Id属性
-db.Insert(student);
-Console.WriteLine($"{student.Id}-{student.Name}");
+db.Insert(student);    // 会将新产生的Id赋值到student.Id属性
+Console.WriteLine($"{student.Id}");
 
 // 批量插入
+
 var students = new List<Student>
 {
     new Student {Name = "张三", ClazzId = 1, CreateAt = DateTime.Now},
@@ -98,12 +93,8 @@ foreach (var stu in students)
 ### 更新
 ```
 var student = db.Load<Student>(1);
-Console.WriteLine($"修改前：{student.Name} - {student.Clazz?.Name}");
 student.Name = student.Name + "修改过";
 var result = db.Update(student);
-Console.WriteLine(result > 0 ? "修改成功" : "修改失败");
-student = db.Load<Student>(1);
-Console.WriteLine($"修改后：{student.Name} - {student.Clazz?.Name}");
 
 // 批量更新
 var students = db.Fetch<Student>(s => s.Id > 1);
@@ -117,28 +108,21 @@ Console.WriteLine($"修改了 {count} 行");
 
 ### 更新-注意，以下内容未经过测试
 ```
-// 将ID为1的Student的Name属性更新为 张三，其他属性不受影响
 db.Update<Student>(1, DbKvs.New().Add("Name", "张三"));
 
-// 只修改实体的指定属性。注意：参数数组内传入的是属性名称，而不是数据表内的列名
-// 有一个兄弟方法:
-// UpdateIngore<Student>(student, new[] {"Name", "ClazzId"}) 
-// 是更新除了 Name和ClazzId 属性外其他所有属性
 var student = db.Load<Student>(1);
 student.Name = student.Name + "测试修改";
 student.ClazzId = 2;
 var count = db.Update<Student>(student, new[] {"Name", "ClazzId"});
+var count2 = db.UpdateIgnore<Student>(student, new[] {"CreateAt"});
 
-// 转班操作-更新所有ClazzId=1的学生的ClazzId更新为2
 db.Update<Student>(DbKvs.New().Add("ClazzId", 2), s => s.ClazzId == 1);
 ```
 
 ### 删除
 ```
-// 删除ID=1的学生
 db.Delete<Student>(1);
 
-// 删除ID为1-3的学生
 db.Delete<Student>(new[] {1,2,3});
 ```
 
