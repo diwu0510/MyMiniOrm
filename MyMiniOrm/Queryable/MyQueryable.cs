@@ -100,10 +100,6 @@ namespace MyMiniOrm.Queryable
 
         public MyQueryable<T> OrderByDesc<TProperty>(Expression<Func<T, TProperty>> expression)
         {
-            if (string.IsNullOrWhiteSpace(_orderBy))
-            {
-                throw new ArgumentNullException(nameof(_where), "排序字段为空，必须先调用OrderBy或OrderByDesc才能调用此方法");
-            }
             if (expression.Body.NodeType == ExpressionType.MemberAccess)
             {
                 var orderBy = GetOrderByString((MemberExpression)expression.Body);
@@ -120,7 +116,7 @@ namespace MyMiniOrm.Queryable
         {
             if (string.IsNullOrWhiteSpace(_orderBy))
             {
-                throw new ArgumentNullException(nameof(_where), "排序字段为空，必须先调用OrderBy或OrderByDesc才能调用此方法");
+                throw new ArgumentNullException(nameof(_orderBy), "排序字段为空，必须先调用OrderBy或OrderByDesc才能调用此方法");
             }
             if (expression.Body.NodeType == ExpressionType.MemberAccess)
             {
@@ -236,7 +232,7 @@ namespace MyMiniOrm.Queryable
                 _masterEntity
                     .Properties
                     .Where(p => p.IsMap)
-                    .Select(p => $"[{_masterEntity.TableName}].[{p.FieldName}]")
+                    .Select(p => $"[{_masterEntity.TableName}].[{p.FieldName}] AS [{p.Name}]")
             );
 
             if (_includeProperties.Count > 0)

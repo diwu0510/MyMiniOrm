@@ -80,6 +80,50 @@ namespace MyMiniOrm.Expressions
             return node;
         }
 
+        protected override Expression VisitUnary(UnaryExpression node)
+        {
+            if (node.NodeType == ExpressionType.Not && node.Operand.NodeType == ExpressionType.MemberAccess)
+            {
+                var rootType = ((MemberExpression)node.Operand).RootExpressionType(out var parameterStack);
+
+                if (rootType == ExpressionType.Parameter)
+                {
+                    if (parameterStack.Count == 2)
+                    {
+                        // 调用了导航属性
+                        var propertyName = parameterStack.Pop();
+                        var propertyFieldName = parameterStack.Pop();
+
+                        _joinProperties.Add(propertyName);
+
+                        var prop = _master.Properties.Single(p => p.Name == propertyName);
+                        var propertyEntity = MyEntityContainer.Get(prop.PropertyInfo.PropertyType);
+                        var propertyProperty = propertyEntity.Properties.Single(p => p.Name == propertyFieldName);
+
+                        _stringStack.Push($"[{propertyName}].[{propertyProperty.FieldName}]=0");
+                    }
+                    else if (parameterStack.Count == 1)
+                    {
+                        var propertyName = parameterStack.Pop();
+                        var propInfo = _master.Properties.Single(p => p.Name == propertyName);
+                        _stringStack.Push($"[{_master.TableName}].[{propInfo.FieldName}]=0");
+                    }
+                    else
+                    {
+                        throw new ArgumentException("尚未支持大于2层属性调用。如 student.Clazz.School.Id>10，请使用类似 student.Clazz.SchoolId > 0 替代");
+                    }
+                }
+                else
+                {
+                    var obj = ResolveValue(node.GetValue());
+                    var parameterName = $"{_prefix}__p_{_parameterIndex++}";
+                    _parameters.Add(new KeyValuePair<string, object>(parameterName, obj));
+                    _stringStack.Push($" {parameterName} ");
+                }
+            }
+            return node;
+        }
+
         protected override Expression VisitMember(MemberExpression node)
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
@@ -129,8 +173,15 @@ namespace MyMiniOrm.Expressions
 
             var parameterName = $"{_prefix}__p_{_parameterIndex++}";
             var value = ResolveValue(node.Value);
-            _parameters.Add(new KeyValuePair<string, object>(parameterName, value));
-            _stringStack.Push($" {parameterName} ");
+            if (value.ToString() == "1=1" || value.ToString() == "1=0")
+            {
+                _stringStack.Push($" {value} ");
+            }
+            else
+            {
+                _parameters.Add(new KeyValuePair<string, object>(parameterName, value));
+                _stringStack.Push($" {parameterName} ");
+            }
             return node;
         }
 
@@ -182,6 +233,11 @@ namespace MyMiniOrm.Expressions
         #region 辅助方法
         private object ResolveValue(object obj)
         {
+            if (obj is bool b)
+            {
+                return b ? "1=1" : "1=0";
+            }
+
             switch (_tempMethod)
             {
                 case "Contains":

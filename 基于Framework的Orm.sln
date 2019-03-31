@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyMiniOrm", "MyMiniOrm\MyMi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleTest", "ConsoleTest\ConsoleTest.csproj", "{30D84FEF-181E-4047-9ABB-D783D4D5866D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebTest", "WebTest\WebTest.csproj", "{39C1DF40-D611-4955-9358-EF16FB9DAC0B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{30D84FEF-181E-4047-9ABB-D783D4D5866D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{30D84FEF-181E-4047-9ABB-D783D4D5866D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{30D84FEF-181E-4047-9ABB-D783D4D5866D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39C1DF40-D611-4955-9358-EF16FB9DAC0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39C1DF40-D611-4955-9358-EF16FB9DAC0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39C1DF40-D611-4955-9358-EF16FB9DAC0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39C1DF40-D611-4955-9358-EF16FB9DAC0B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

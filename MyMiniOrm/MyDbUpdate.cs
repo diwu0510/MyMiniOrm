@@ -13,8 +13,6 @@ namespace MyMiniOrm
 {
     public partial class MyDb
     {
-        
-
         public int Update<T>(int id, DbKvs kvs)
         {
             var entityInfo = MyEntityContainer.Get(typeof(T));

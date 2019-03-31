@@ -2,7 +2,7 @@
 using MyMiniOrm.Commons;
 using System;
 
-namespace ConsoleTest
+namespace WebTest.Models
 {
     public class Student : IEntity
     {
@@ -20,24 +20,25 @@ namespace ConsoleTest
         public DateTime? Birthday { get; set; }
 
         [MyColumn(UpdateIgnore = true)]
-        public int FKSchoolId { get; set; }
+        public int? FKSchoolId { get; set; }
+
+        [MyForeignKey("FKSchoolId")]
+        public School School { get; set; }
 
         [MyColumn(UpdateIgnore = true)]
         public string Owner { get; set; }
 
         [MyColumn(UpdateIgnore = true)]
-        public bool IsDel { get; set; }
+        public bool IsDel { get; set; } = false;
 
         [MyColumn(UpdateIgnore = true)]
-        public DateTime CreateAt { get; set; }
+        public DateTime CreateAt { get; set; } = DateTime.Now;
 
         [MyColumn(UpdateIgnore = true)]
         public string CreateBy { get; set; }
 
-        public DateTime UpdateAt { get; set; }
+        public DateTime UpdateAt { get; set; } = DateTime.Now;
 
         public string UpdateBy { get; set; }
-
-        public School School { get; set; }
     }
 }

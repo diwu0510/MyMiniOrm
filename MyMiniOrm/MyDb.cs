@@ -24,6 +24,27 @@ namespace MyMiniOrm
             _prefix = prefix;
         }
 
+        public MyDb()
+        {
+            if (string.IsNullOrWhiteSpace(MyMiniOrmConfiguration.GetConnectionString()))
+            {
+                throw new Exception("MyMiniOrm尚未初始化");
+            }
+
+            _connectionString = MyMiniOrmConfiguration.GetConnectionString();
+            _prefix = MyMiniOrmConfiguration.GetPrefix();
+        }
+
+        public static MyDb New()
+        {
+            return new MyDb();
+        }
+
+        public static MyDb New(string connectionString, string prefix = "@")
+        {
+            return new MyDb(connectionString, prefix);
+        }
+
         #region 查找
         public MyQueryable<T> Query<T>() where T : class, IEntity, new()
         {
@@ -117,7 +138,8 @@ namespace MyMiniOrm
             {
                 conn.Open();
                 command.Connection = conn;
-                entity.Id = Convert.ToInt32(command.ExecuteScalar().ToString());
+                var result = command.ExecuteScalar().ToString();
+                entity.Id = Convert.ToInt32(string.IsNullOrWhiteSpace(result) ? "0" : result);
                 return entity.Id;
             }
         }
@@ -155,7 +177,8 @@ namespace MyMiniOrm
                 {
                     conn.Open();
                     command.Connection = conn;
-                    entity.Id = Convert.ToInt32(command.ExecuteScalar().ToString());
+                    var result = command.ExecuteScalar().ToString();
+                    entity.Id = Convert.ToInt32(string.IsNullOrWhiteSpace(result) ? "0" : result);
                     return entity.Id;
                 }
             }
@@ -186,7 +209,8 @@ namespace MyMiniOrm
                                     .Where(p => !p.InsertIgnore)
                                     .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity)))
                                     .ToArray());
-                                entity.Id = Convert.ToInt32(command.ExecuteScalar());
+                                var result = command.ExecuteScalar().ToString();
+                                entity.Id = Convert.ToInt32(string.IsNullOrWhiteSpace(result) ? "0" : result);
                                 count++;
                             }
                         }
@@ -267,6 +291,38 @@ namespace MyMiniOrm
             }
 
             return count;
+        }
+
+        public int UpdateIfNotExit<T>(T entity, Expression<Func<T, bool>> where)
+        {
+            var entityInfo = MyEntityContainer.Get(typeof(T));
+            var whereExpressionVisitor = new WhereExpressionVisitor<T>(entityInfo);
+            whereExpressionVisitor.Visit(where);
+
+            var condition = whereExpressionVisitor.GetCondition();
+            var parameters = whereExpressionVisitor.GetParameters().ToSqlParameters();
+
+            condition = string.IsNullOrWhiteSpace(condition) ? "1=1" : condition;
+
+            var sqlBuilder = new SqlServerSqlBuilder();
+            var sql = sqlBuilder.Update(entityInfo, "");
+            sql += $" AND NOT EXISTS (SELECT 1 FROM [{entityInfo.TableName}] WHERE {condition})";
+
+            parameters.AddRange(
+                entityInfo
+                    .Properties
+                    .Where(p => !p.UpdateIgnore || p.IsKey)
+                    .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity))));
+
+            var command = new SqlCommand(sql);
+            command.Parameters.AddRange(parameters.ToArray());
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                command.Connection = conn;
+                return command.ExecuteNonQuery();
+            }
         }
         #endregion
 

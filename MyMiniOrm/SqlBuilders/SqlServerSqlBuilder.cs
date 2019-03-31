@@ -77,6 +77,16 @@ namespace MyMiniOrm.SqlBuilders
 
         public string GetPagingQuerySql(string cols, string tables, string condition, string orderBy, int index, int size)
         {
+            if (string.IsNullOrWhiteSpace(orderBy))
+            {
+                orderBy = "(select 1)";
+            }
+
+            if (string.IsNullOrWhiteSpace(condition))
+            {
+                condition = "1=1";
+            }
+
             if (index == 1)
             {
                 var sql =
@@ -88,18 +98,7 @@ namespace MyMiniOrm.SqlBuilders
             {
                 var sb = new StringBuilder();
                 sb.Append("FROM ").Append(tables);
-
-                if (!string.IsNullOrWhiteSpace(condition))
-                {
-                    sb.Append(" WHERE ").Append(condition);
-                }
-
-                if (string.IsNullOrWhiteSpace(orderBy))
-                {
-                    orderBy = "(select 1)";
-                    //throw new Exception("分页查询必须提供OrderBy字段");
-                }
-
+                sb.Append(" WHERE ").Append(condition);
                 var sql = $@"  WITH PAGEDDATA AS
 					    (
 						    SELECT TOP 100 PERCENT {cols}, ROW_NUMBER() OVER (ORDER BY {@orderBy}) AS FLUENTDATA_ROWNUMBER
