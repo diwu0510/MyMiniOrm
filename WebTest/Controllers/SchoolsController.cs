@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using MyMiniOrm;
+using MyMiniOrm.Commons;
 using WebTest.Models;
 
 namespace WebTest.Controllers
@@ -14,7 +15,7 @@ namespace WebTest.Controllers
         
         public ActionResult Index()
         {
-            var list = _db.Query<School>().Where(s => s.IsDel == false).OrderByDesc(s => s.UpdateAt).ToList();
+            var list = _db.Query<School>().Where(s => !s.IsDel).OrderByDesc(s => s.UpdateAt).ToList();
             return View(list);
         }
 
@@ -103,11 +104,12 @@ namespace WebTest.Controllers
             TryUpdateModel(entity);
             try
             {
-                var result = _db.Delete<School>(id);
-                if (result > 0)
-                {
-                    return RedirectToAction("Index");
-                }
+                //var result = _db.Delete<School>(id);
+                //if (result > 0)
+                //{
+                //    return RedirectToAction("Index");
+                //}
+                var result = _db.Update<School>(DbKvs.New().Add("IsDel", true), s => s.Id == id);
                 ModelState.AddModelError(string.Empty, "删除失败");
                 return View(entity);
             }

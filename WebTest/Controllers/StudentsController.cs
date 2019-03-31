@@ -18,7 +18,7 @@ namespace WebTest.Controllers
         public ActionResult Index(int id, StudentSearchDto search)
         {
             var expr = LinqExtensions.True<Student>();
-            expr = expr.And(s => !s.IsDel);
+            expr = expr.And(s => s.IsDel == false);
 
             if (!string.IsNullOrWhiteSpace(search.Key))
             {

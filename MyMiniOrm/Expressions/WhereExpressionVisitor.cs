@@ -29,6 +29,8 @@ namespace MyMiniOrm.Expressions
         // 参数序号，用于生成SqlParameter的Name
         private int _parameterIndex;
 
+        private string _expressionDirection;
+
         #region 构造函数
         public WhereExpressionVisitor(string prefix = "@")
         {
@@ -69,9 +71,13 @@ namespace MyMiniOrm.Expressions
 
             _stringStack.Push(")");
 
+            _expressionDirection = "right";
+
             Visit(node.Right);
 
             _stringStack.Push(node.NodeType.ToSqlOperator());
+
+            _expressionDirection = "left";
 
             Visit(node.Left);
 
@@ -233,9 +239,12 @@ namespace MyMiniOrm.Expressions
         #region 辅助方法
         private object ResolveValue(object obj)
         {
-            if (obj is bool b)
+            if (_expressionDirection == "left")
             {
-                return b ? "1=1" : "1=0";
+                if (obj is bool b)
+                {
+                    return b ? "1=1" : "1=0";
+                }
             }
 
             switch (_tempMethod)
