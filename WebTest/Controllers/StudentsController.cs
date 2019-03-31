@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Web;
 using System.Web.Mvc;
 using MyMiniOrm;
+using MyMiniOrm.Commons;
 using MyMiniOrm.Expressions;
 using WebTest.Models;
 
@@ -61,6 +62,7 @@ namespace WebTest.Controllers
         // GET: Students/Create
         public ActionResult Create()
         {
+            InitUi();
             return View();
         }
 
@@ -68,60 +70,97 @@ namespace WebTest.Controllers
         [HttpPost]
         public ActionResult Create(FormCollection collection)
         {
+            var entity = new Student();
+            TryUpdateModel(entity);
             try
             {
-                // TODO: Add insert logic here
+                entity.CreateBy = "132";
+                entity.UpdateBy = "132";
+                entity.Owner = "132";
 
-                return RedirectToAction("Index");
+                var result = _db.InsertIfNotExist(entity, s => s.Mobile == entity.Mobile);
+                if (result > 0)
+                {
+                    return RedirectToAction("Index");
+                }
+
+                ModelState.AddModelError(string.Empty, "创建失败");
             }
-            catch
+            catch (Exception ex)
             {
-                return View();
+                ModelState.AddModelError(string.Empty, ex.Message);
             }
+            InitUi();
+            return View(entity);
         }
 
         // GET: Students/Edit/5
         public ActionResult Edit(int id)
         {
-            return View();
+            var entity = _db.Load<Student>(id);
+            if (entity == null)
+            {
+                return HttpNotFound();
+            }
+            InitUi();
+            return View(entity);
         }
 
         // POST: Students/Edit/5
         [HttpPost]
         public ActionResult Edit(int id, FormCollection collection)
         {
+            var entity = new Student();
+            TryUpdateModel(entity);
+
             try
             {
-                // TODO: Add update logic here
+                entity.CreateBy = "132";
+                entity.UpdateBy = "132";
 
-                return RedirectToAction("Index");
+                var result = _db.UpdateIfNotExit(entity, s => s.Mobile == entity.Mobile && s.Id != entity.Id);
+                if (result > 0)
+                {
+                    return RedirectToAction("Index");
+                }
+
+                ModelState.AddModelError(string.Empty, "更新失败");
             }
-            catch
+            catch (Exception ex)
             {
-                return View();
+                ModelState.AddModelError(string.Empty, ex.Message);
             }
+            InitUi();
+            return View(entity);
         }
 
         // GET: Students/Delete/5
         public ActionResult Delete(int id)
         {
-            return View();
+            var entity = _db.Load<Student>(id);
+            return View(entity);
         }
 
         // POST: Students/Delete/5
         [HttpPost]
         public ActionResult Delete(int id, FormCollection collection)
         {
+            var entity = new School();
+            TryUpdateModel(entity);
             try
             {
-                // TODO: Add delete logic here
-
-                return RedirectToAction("Index");
+                var result = _db.Update<Student>(DbKvs.New().Add("IsDel", true), s => s.Id == id);
+                if (result > 0)
+                {
+                    return RedirectToAction("Index");
+                }
+                ModelState.AddModelError(string.Empty, "删除失败");
             }
-            catch
+            catch (Exception ex)
             {
-                return View();
+                ModelState.AddModelError(string.Empty, ex.Message);
             }
+            return View(entity);
         }
 
         private void InitUi()

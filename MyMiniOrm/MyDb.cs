@@ -129,7 +129,7 @@ namespace MyMiniOrm
             var parameterList = entityInfo
                 .Properties
                 .Where(p => !p.InsertIgnore)
-                .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity)));
+                .Select(p => new SqlParameter($"{_prefix}{p.Name}", ResolveParameterValue(p.PropertyInfo.GetValue(entity))));
 
             var command = new SqlCommand(sql);
             command.Parameters.AddRange(parameterList.ToArray());
@@ -168,8 +168,8 @@ namespace MyMiniOrm
                     entityInfo
                         .Properties
                         .Where(p => !p.InsertIgnore)
-                        .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity))));
-
+                        .Select(p => new SqlParameter($"{_prefix}{p.Name}",
+                            ResolveParameterValue(p.PropertyInfo.GetValue(entity)))));
                 var command = new SqlCommand(sql);
                 command.Parameters.AddRange(parameters.ToArray());
 
@@ -207,7 +207,8 @@ namespace MyMiniOrm
                                 command.Parameters.AddRange(entityInfo
                                     .Properties
                                     .Where(p => !p.InsertIgnore)
-                                    .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity)))
+                                    .Select(p => new SqlParameter($"{_prefix}{p.Name}",
+                                        ResolveParameterValue(p.PropertyInfo.GetValue(entity))))
                                     .ToArray());
                                 var result = command.ExecuteScalar().ToString();
                                 entity.Id = Convert.ToInt32(string.IsNullOrWhiteSpace(result) ? "0" : result);
@@ -239,7 +240,8 @@ namespace MyMiniOrm
             var parameterList = entityInfo
                 .Properties
                 .Where(p => !p.UpdateIgnore || p.IsKey)
-                .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity)));
+                .Select(p => new SqlParameter($"{_prefix}{p.Name}",
+                    ResolveParameterValue(p.PropertyInfo.GetValue(entity))));
 
             var command = new SqlCommand(sql);
             command.Parameters.AddRange(parameterList.ToArray());
@@ -275,7 +277,8 @@ namespace MyMiniOrm
                                 command.Parameters.AddRange(entityInfo
                                     .Properties
                                     .Where(p => !p.UpdateIgnore || p.IsKey)
-                                    .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity)))
+                                    .Select(p => new SqlParameter($"{_prefix}{p.Name}",
+                                        ResolveParameterValue(p.PropertyInfo.GetValue(entity))))
                                     .ToArray());
                                 count += command.ExecuteNonQuery();
                             }
@@ -312,7 +315,8 @@ namespace MyMiniOrm
                 entityInfo
                     .Properties
                     .Where(p => !p.UpdateIgnore || p.IsKey)
-                    .Select(p => new SqlParameter($"{_prefix}{p.Name}", p.PropertyInfo.GetValue(entity))));
+                    .Select(p => new SqlParameter($"{_prefix}{p.Name}",
+                        ResolveParameterValue(p.PropertyInfo.GetValue(entity)))));
 
             var command = new SqlCommand(sql);
             command.Parameters.AddRange(parameters.ToArray());
@@ -400,6 +404,16 @@ namespace MyMiniOrm
             {
                 return func.Invoke(conn);
             }
+        }
+
+        private object ResolveParameterValue(object val)
+        {
+            if (val is null)
+            {
+                val = DBNull.Value;
+            }
+
+            return val;
         }
         #endregion
     }

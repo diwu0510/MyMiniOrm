@@ -110,6 +110,10 @@ namespace WebTest.Controllers
                 //    return RedirectToAction("Index");
                 //}
                 var result = _db.Update<School>(DbKvs.New().Add("IsDel", true), s => s.Id == id);
+                if (result > 0)
+                {
+                    return RedirectToAction("Index");
+                }
                 ModelState.AddModelError(string.Empty, "删除失败");
                 return View(entity);
             }

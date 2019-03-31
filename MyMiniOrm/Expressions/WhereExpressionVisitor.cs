@@ -191,7 +191,6 @@ namespace MyMiniOrm.Expressions
             return node;
         }
 
-
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
