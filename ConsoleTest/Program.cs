@@ -20,34 +20,39 @@ namespace ConsoleTest
             Expression<Func<Student, bool>> expr = s => (s.CreateAt>dt || s.UpdateAt>dt) && s.IsDel == false && s.School.SchoolName.Contains("测试");
             //Expression<Func<Student, bool>> expr = s => s.IsDel == true && true;
 
+            var resolver = new ConditionResolver(MyEntityContainer.Get(typeof(Student)));
 
-            var search = LinqExtensions.False<Student>();
-            search = search.And(s => s.CreateAt > dt || s.UpdateAt > dt);
-            search = search.And(s => !s.IsDel);
-            search = search.And(s => s.School.SchoolName.Contains("测试"));
+            resolver.Visit(expr);
+            Console.WriteLine(resolver.GetCondition());
 
-            var visitor = new WhereExpressionVisitor<Student>();
-            visitor.Visit(expr);
 
-            Console.WriteLine(visitor.GetCondition());
+            //var search = LinqExtensions.False<Student>();
+            //search = search.And(s => s.CreateAt > dt || s.UpdateAt > dt);
+            //search = search.And(s => !s.IsDel);
+            //search = search.And(s => s.School.SchoolName.Contains("测试"));
 
-            var parameters = visitor.GetParameters();
-            foreach (var parameter in parameters)
-            {
-                Console.WriteLine($"{parameter.Key} = {parameter.Value}");
-            }
+            //var visitor = new WhereExpressionVisitor<Student>();
+            //visitor.Visit(expr);
 
-            Console.WriteLine("======================");
+            //Console.WriteLine(visitor.GetCondition());
 
-            var visitor2 = new WhereExpressionVisitor<Student>();
-            visitor2.Visit(search);
+            //var parameters = visitor.GetParameters();
+            //foreach (var parameter in parameters)
+            //{
+            //    Console.WriteLine($"{parameter.Key} = {parameter.Value}");
+            //}
 
-            Console.WriteLine(visitor2.GetCondition());
-            var parameters2 = visitor2.GetParameters();
-            foreach (var parameter in parameters2)
-            {
-                Console.WriteLine($"{parameter.Key} = {parameter.Value}");
-            }
+            //Console.WriteLine("======================");
+
+            //var visitor2 = new WhereExpressionVisitor<Student>();
+            //visitor2.Visit(search);
+
+            //Console.WriteLine(visitor2.GetCondition());
+            //var parameters2 = visitor2.GetParameters();
+            //foreach (var parameter in parameters2)
+            //{
+            //    Console.WriteLine($"{parameter.Key} = {parameter.Value}");
+            //}
 
             Console.Read();
         }
