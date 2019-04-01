@@ -55,6 +55,7 @@
     <Compile Include="Commons\ISoftDelete.cs" />
     <Compile Include="Expressions\ConditionExpressionVisitor.cs" />
     <Compile Include="Expressions\ExpressionExtensions.cs" />
+    <Compile Include="Expressions\ExpressionToSql.cs" />
     <Compile Include="Expressions\IncludePropertySdrMap.cs" />
     <Compile Include="Expressions\LinqExtensions.cs" />
     <Compile Include="Expressions\SqlDataReaderConverter.cs" />

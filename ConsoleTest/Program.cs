@@ -8,6 +8,7 @@ using MyMiniOrm;
 using MyMiniOrm.Commons;
 using MyMiniOrm.Expressions;
 using MyMiniOrm.Queryable;
+using MyMiniOrm.Reflections;
 
 namespace ConsoleTest
 {
@@ -15,10 +16,38 @@ namespace ConsoleTest
     {
         static void Main(string[] args)
         {
-            Expression<Func<Student, bool>> expr = s => (s.StudentName.Contains("name") || s.School.SchoolName.Contains("name")) && s.IsDel == false && true && s.School.SchoolName.Contains("测试");
-            var visitor = new ConditionExpressionVisitor();
+            var dt = DateTime.Today;
+            Expression<Func<Student, bool>> expr = s => (s.CreateAt>dt || s.UpdateAt>dt) && s.IsDel == false && s.School.SchoolName.Contains("测试");
+            //Expression<Func<Student, bool>> expr = s => s.IsDel == true && true;
+
+
+            var search = LinqExtensions.False<Student>();
+            search = search.And(s => s.CreateAt > dt || s.UpdateAt > dt);
+            search = search.And(s => !s.IsDel);
+            search = search.And(s => s.School.SchoolName.Contains("测试"));
+
+            var visitor = new WhereExpressionVisitor<Student>();
             visitor.Visit(expr);
-            var stack = visitor.GetStack();
+
+            Console.WriteLine(visitor.GetCondition());
+
+            var parameters = visitor.GetParameters();
+            foreach (var parameter in parameters)
+            {
+                Console.WriteLine($"{parameter.Key} = {parameter.Value}");
+            }
+
+            Console.WriteLine("======================");
+
+            var visitor2 = new WhereExpressionVisitor<Student>();
+            visitor2.Visit(search);
+
+            Console.WriteLine(visitor2.GetCondition());
+            var parameters2 = visitor2.GetParameters();
+            foreach (var parameter in parameters2)
+            {
+                Console.WriteLine($"{parameter.Key} = {parameter.Value}");
+            }
 
             Console.Read();
         }

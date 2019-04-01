@@ -25,8 +25,22 @@ namespace MyMiniOrm.Expressions
         {
             return Expression.Lambda<T>(body, parameters);
         }
-        public static Expression<Func<T, bool>> True<T>() { return param => true; }
-        public static Expression<Func<T, bool>> False<T>() { return param => false; }
+
+        public static Expression<Func<T, bool>> True<T>()
+        {
+            return param => DefaultTrue();
+        }
+        public static Expression<Func<T, bool>> False<T>() { return param => DefaultFalse(); }
+
+        private static bool DefaultTrue()
+        {
+            return true;
+        }
+
+        private static bool DefaultFalse()
+        {
+            return false;
+        }
         /// <summary>
         /// 组合And
         /// </summary>
