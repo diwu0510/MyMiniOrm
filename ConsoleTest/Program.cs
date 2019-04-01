@@ -17,13 +17,25 @@ namespace ConsoleTest
         static void Main(string[] args)
         {
             var dt = DateTime.Today;
-            Expression<Func<Student, bool>> expr = s => (s.CreateAt>dt || s.UpdateAt>dt) && s.IsDel == false && s.School.SchoolName.Contains("测试");
-            //Expression<Func<Student, bool>> expr = s => s.IsDel == true && true;
+            var isActive = true;
+            //Expression<Func<Student, bool>> expr = s => (s.CreateAt>dt || s.UpdateAt>dt) && 
+                                                        //s.IsDel && 
+                                                        //true && 
+                                                        //isActive &&
+                                                        //s.School.SchoolName.Contains("测试") &&
+                                                        //s.CreateAt < s.UpdateAt;
+            Expression<Func<Student, bool>> expr = s => isActive;
 
             var resolver = new ConditionResolver(MyEntityContainer.Get(typeof(Student)));
 
-            resolver.Visit(expr);
+            resolver.Resolve(expr.Body);
             Console.WriteLine(resolver.GetCondition());
+
+            var parameters = resolver.GetParameters();
+            foreach (var parameter in parameters)
+            {
+                Console.WriteLine($"{parameter.Key} : {parameter.Value}");
+            }
 
 
             //var search = LinqExtensions.False<Student>();
