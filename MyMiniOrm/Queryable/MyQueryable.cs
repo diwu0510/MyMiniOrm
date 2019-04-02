@@ -39,6 +39,11 @@ namespace MyMiniOrm.Queryable
         // 拼接好的order by子句
         private string _orderBy;
 
+        private Func<T, object> _func;
+
+        public delegate TResult ObjectConvertor<out TResult>(T input);
+        ObjectConvertor<TResult> doWork
+
         // 构造方法
         public MyQueryable(string connectionString)
         {
@@ -207,6 +212,13 @@ namespace MyMiniOrm.Queryable
                 var handler = new SqlDataReaderConverter<T>(_includeProperties.ToArray());
                 return handler.ConvertToEntity2(sdr);
             }
+        }
+
+        public MyQueryable<T> Select<TResult>(Expression<Func<T, TResult>> expression)
+        {
+            var func = expression.Compile();
+            //_func = func;
+            return this;
         }
         #endregion
 

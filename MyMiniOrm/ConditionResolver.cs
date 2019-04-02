@@ -197,6 +197,16 @@ namespace MyMiniOrm
                     var left = expression.Left;
                     var op = expression.NodeType.ToSqlOperator();
 
+                    if (op == "=" || op == "<>")
+                    {
+                        if (right.NodeType == ExpressionType.Constant && right.GetValue() == null)
+                        {
+                            return op == "="
+                                ? $"{ResolveExpression(left, false)} IS NULL"
+                                : $"{ResolveExpression(left, false)} IS NOT NULL";
+                        }
+                    }
+
                     return $"{ResolveExpression(left, false)} {op} {ResolveExpression(right, false)}";
                 }
             }

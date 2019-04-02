@@ -18,13 +18,14 @@ namespace ConsoleTest
         {
             var dt = DateTime.Today;
             var isActive = true;
-            //Expression<Func<Student, bool>> expr = s => (s.CreateAt>dt || s.UpdateAt>dt) && 
-                                                        //s.IsDel && 
-                                                        //true && 
-                                                        //isActive &&
-                                                        //s.School.SchoolName.Contains("测试") &&
-                                                        //s.CreateAt < s.UpdateAt;
-            Expression<Func<Student, bool>> expr = s => isActive;
+            Expression<Func<Student, bool>> expr = s => (s.CreateAt > dt || s.UpdateAt > dt) &&
+                                                        s.IsDel &&
+                                                        true &&
+                                                        isActive &&
+                                                        s.School.SchoolName.Contains("测试") &&
+                                                        s.CreateAt < s.UpdateAt &&
+                                                        s.Birthday == null;
+            //Expression<Func<Student, bool>> expr = s => isActive && s.Birthday != null && true;
 
             var resolver = new ConditionResolver(MyEntityContainer.Get(typeof(Student)));
 

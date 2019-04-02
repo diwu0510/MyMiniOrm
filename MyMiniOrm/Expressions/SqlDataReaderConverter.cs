@@ -65,6 +65,36 @@ namespace MyMiniOrm.Expressions
 
             return entity;
         }
+
+        public T ConvertToObject(SqlDataReader sdr, List<KeyValuePair<string, string>> keyValuePairs)
+        {
+            var entity = new T();
+
+            foreach (var property in Master.Properties.Where(p => p.IsMap))
+            {
+                property.PropertyInfo.SetValue(entity, sdr[property.Name]);
+            }
+
+            foreach (var include in Includes)
+            {
+                var prop = Master.Properties.SingleOrDefault(p => p.Name == include);
+                if (prop != null)
+                {
+                    var subType = prop.PropertyInfo.PropertyType;
+                    var subEntityInfo = MyEntityContainer.Get(subType);
+                    var subEntity = Activator.CreateInstance(subType);
+
+                    foreach (var subProperty in subEntityInfo.Properties.Where(p => p.IsMap))
+                    {
+                        subProperty.PropertyInfo.SetValue(subEntity, sdr[$"{include}_{subProperty.Name}"]);
+                    }
+
+                    prop.PropertyInfo.SetValue(entity, subEntity);
+                }
+            }
+
+            return entity;
+        }
         #endregion
 
         #region 表达式目录树
