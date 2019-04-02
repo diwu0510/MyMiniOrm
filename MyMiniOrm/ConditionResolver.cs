@@ -45,6 +45,11 @@ namespace MyMiniOrm
             return _parameters;
         }
 
+        public List<string> GetJoinPropertyList()
+        {
+            return _joinProperties;
+        }
+
         public void Resolve(Expression node)
         {
             if (node.NodeType == ExpressionType.AndAlso ||
@@ -208,6 +213,21 @@ namespace MyMiniOrm
                     }
 
                     return $"{ResolveExpression(left, false)} {op} {ResolveExpression(right, false)}";
+                }
+                default:
+                {
+                    if (isClause)
+                    {
+                        var value = node.GetValue();
+                        return value is bool b ? b ? "1=1" : "1=0" : string.Empty;
+                    }
+                    else
+                    {
+                        var val = node.GetValue();
+                        var parameterName = GetParameterName();
+                        _parameters.Add(new KeyValuePair<string, object>(parameterName, val));
+                        return parameterName;
+                    }
                 }
             }
 

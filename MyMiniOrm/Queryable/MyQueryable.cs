@@ -42,7 +42,6 @@ namespace MyMiniOrm.Queryable
         private Func<T, object> _func;
 
         public delegate TResult ObjectConvertor<out TResult>(T input);
-        ObjectConvertor<TResult> doWork
 
         // 构造方法
         public MyQueryable(string connectionString)
@@ -82,11 +81,17 @@ namespace MyMiniOrm.Queryable
             }
             _hasInitWhere = true;
 
-            var whereExpressionVisitor = new WhereExpressionVisitor<T>(_masterEntity);
-            whereExpressionVisitor.Visit(expr);
-            _where = whereExpressionVisitor.GetCondition();
-            _whereParameters = whereExpressionVisitor.GetParameters();
-            _whereProperties = whereExpressionVisitor.GetJoinPropertyList();
+            //var whereExpressionVisitor = new WhereExpressionVisitor<T>(_masterEntity);
+            //whereExpressionVisitor.Visit(expr);
+            //_where = whereExpressionVisitor.GetCondition();
+            //_whereParameters = whereExpressionVisitor.GetParameters();
+            //_whereProperties = whereExpressionVisitor.GetJoinPropertyList();
+
+            var condition = new ConditionResolver(_masterEntity);
+            condition.Resolve(expr.Body);
+            _where = condition.GetCondition();
+            _whereParameters = condition.GetParameters();
+            _whereProperties = condition.GetJoinPropertyList();
 
             return this;
         }

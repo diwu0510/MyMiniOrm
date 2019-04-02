@@ -78,7 +78,7 @@ namespace WebTest.Controllers
                 entity.UpdateBy = "132";
                 entity.Owner = "132";
 
-                var result = _db.InsertIfNotExist(entity, s => s.Mobile == entity.Mobile);
+                var result = _db.InsertIfNotExists(entity, s => s.Mobile == entity.Mobile);
                 if (result > 0)
                 {
                     return RedirectToAction("Index");
@@ -118,7 +118,7 @@ namespace WebTest.Controllers
                 entity.CreateBy = "132";
                 entity.UpdateBy = "132";
 
-                var result = _db.UpdateIfNotExit(entity, s => s.Mobile == entity.Mobile && s.Id != entity.Id);
+                var result = _db.UpdateIfNotExits(entity, s => s.Mobile == entity.Mobile && s.Id != entity.Id);
                 if (result > 0)
                 {
                     return RedirectToAction("Index");
@@ -165,7 +165,7 @@ namespace WebTest.Controllers
 
         private void InitUi()
         {
-            var schools = _db.Fetch<School>();
+            var schools = _db.Query<School>().ToList();
             ViewBag.Schools = schools.Select(s => new SelectListItem {Text = s.SchoolName, Value = s.Id.ToString()});
         }
     }

@@ -37,7 +37,7 @@ namespace WebTest.Controllers
                 entity.UpdateBy = "132";
                 entity.Owner = "132";
 
-                var result = _db.InsertIfNotExist(entity, s => s.SchoolName == entity.SchoolName);
+                var result = _db.InsertIfNotExists(entity, s => s.SchoolName == entity.SchoolName);
                 if (result > 0)
                 {
                     return RedirectToAction("Index");
@@ -72,7 +72,7 @@ namespace WebTest.Controllers
                 entity.CreateBy = "132";
                 entity.UpdateBy = "132";
 
-                var result = _db.UpdateIfNotExit(entity, s => s.SchoolName == entity.SchoolName && s.Id != entity.Id);
+                var result = _db.UpdateIfNotExits(entity, s => s.SchoolName == entity.SchoolName && s.Id != entity.Id);
                 if (result > 0)
                 {
                     return RedirectToAction("Index");
