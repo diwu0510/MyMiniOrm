@@ -35,5 +35,13 @@ namespace MyMiniOrm.Expressions
 
             return node;
         }
+
+        protected override Expression VisitNew(NewExpression node)
+        {
+            var members = node.Members.Select(m => m.Name);
+            var props = _master.Properties.Where(p => p.IsMap && members.Contains(p.Name)).Select(p => new KeyValuePair<string, string>(p.Name, p.FieldName));
+            _propertyList.AddRange(props);
+            return node;
+        }
     }
 }
