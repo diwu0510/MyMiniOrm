@@ -88,6 +88,11 @@ foreach (var stu in students)
 {
     Console.WriteLine($"{stu.Id}-{stu.Name}");
 }
+
+// 如果不存在，则插入
+// 如限制用户名不能重复 InsertIfNotExist(user, u => u.Name == user.Name)
+
+int InsertIfNotExists<T>(T entity, Expression<Func<T, bool>> where) where T : class, IEntity, new()
 ```
 
 ### 更新
@@ -104,28 +109,44 @@ foreach (var student in students)
 }
 var count = db.Update(students);
 Console.WriteLine($"修改了 {count} 行");
+
+// 如果不存在则更新
+// UpdateIfNotExists(user, u=>u.Name == user.Name && u.Id != user.Id)
+
+int UpdateIfNotExits<T>(T entity, Expression<Func<T, bool>> where)
 ```
 
 ### 更新-注意，以下内容未经过测试
 ```
+// 通过Id修改指定列
 db.Update<Student>(1, DbKvs.New().Add("Name", "张三"));
 
 var student = db.Load<Student>(1);
 student.Name = student.Name + "测试修改";
 student.ClazzId = 2;
 
-// 注意，下面方法传入的是属性名而不列名
-var count = db.Update<Student>(student, new[] {"Name", "ClazzId"});
-var count2 = db.UpdateIgnore<Student>(student, new[] {"CreateAt"});
+// 更新指定对象的指定属性（指定忽略属性）
+// 注意，下面方法传入的是属性名而不是列名
+
+var count = db.UpdateInclude<Student>(student, new[] {"Name", "ClazzId"});
+var count2 = db.UpdateInclude<Student>(student, s => new { s.Name, s.ClazzId };
+var count3 = db.UpdateIgnore<Student>(student, new[] {"CreateAt"});
+var count4 = db.UpdateInclude<Student>(student, s => new { s.CreateAt, s.Creator, s.IsDel };
+
+// 通过指定条件修改指定列，注意第一个参数传入的是属性名而不是列名
 
 db.Update<Student>(DbKvs.New().Add("ClazzId", 2), s => s.ClazzId == 1);
 ```
 
 ### 删除
 ```
-db.Delete<Student>(1);
+// 如果实体继承ISoftDelete，此方法将IsDel列赋值为0，可通过传入 isForce=true，强制delete
 
-db.Delete<Student>(new[] {1,2,3});
+// int Delete<T>(int id, bool isForce = false) where T : class, IEntity, new()
+db.Delete<Student>(1, true);
+
+// int Delete<T>(IEnumerable<int> idList, bool isForce = false) where T : class, IEntity, new()
+db.Delete<Student>(new[] {1,2,3}, true);
 ```
 
 暂时这么多，后继功能将陆续添加进来。注意：此项目仅用于作业内部交流，代码为经过比较严格的测试，可能会有坑，慎入。
