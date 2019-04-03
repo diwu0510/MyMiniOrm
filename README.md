@@ -36,6 +36,10 @@ public class Clazz : IEntity
 
 ```
 var db = new MyDb("DataSource=.;Database=Test;USER ID=sa;Password=1234");
+
+// 或者在global中定义默认配置，使用时只要 var db = MyDb.New(); 即可。
+// MyDb.New()等同于 new MyDb();
+MyMiniOrmConfiguration.Init(ConfigurationManager.AppSettings["DefaultConnectionString"]);
 ```
 ### 查询单个实体：
 ```
