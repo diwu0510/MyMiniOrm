@@ -29,6 +29,23 @@ public class Clazz : IEntity
     public string Name { get; set; }
 }
 ```
+## 导航属性
+
+如上面定义的Student类，导航属性Clazz默认外键为ClazzId，如需显式指定外键，可使用[MyForeignKey("FKClazzId")]修饰Clazz属性，这样查询时就可以通过Include(s => s.Clazz)查找到相关的Clazz信息，默认仅支持Left Join。
+
+## 实体描述
+
+- ### MyTableAttribute(string tableName) 
+用于描述实体类，若实体名称与表名不同，需要使用此描述指定表名
+
+- ### MyKeyAttribute(string keyName) 
+用于描述实体的主键，若主键列不为Id，需使用词描述指定主键对应的列名
+
+- ### MyColumnAttribute(string ColumnName,bool Ignore,bool InsertIgnore, bool UpdateIgnore) 
+列描述，可指定对应的列名，Ignore=true 插入和修改时都忽略此字段，InsertIgnore=true 插入时忽略， UpdateIgnore=true 修改时忽略
+
+- ### MyForeignKeyAttribute(string ForeignKey, string MasterKey) 
+若外键名非 导航属性名+"Id"，则需通过ForeignKey指定，MasterKey默认为Id，若不是通过Id进行关联或关联表的主键名不是Id，则需要通过此MasterKey指定
 
 ## 用法
 
