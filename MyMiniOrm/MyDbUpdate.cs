@@ -105,7 +105,7 @@ namespace MyMiniOrm
         /// <param name="includes">要修改的属性名称，注意：是实体的属性名而不是数据库字段名</param>
         /// <param name="ignoreAttribute">是否忽略实体的UpdateIgnore描述。默认为true，既includes中包含的所有属性都会被修改</param>
         /// <returns>受影响的记录数</returns>
-        public int Update<T>(T entity, IEnumerable<string> includes, bool ignoreAttribute = true) where T : IEntity
+        public int UpdateInclude<T>(T entity, IEnumerable<string> includes, bool ignoreAttribute = true) where T : IEntity
         {
             var entityInfo = MyEntityContainer.Get(typeof(T));
             var includeProperties = entityInfo.Properties.Where(p => includes.Contains(p.Name) && p.Name != "Id").ToList();
@@ -146,13 +146,13 @@ namespace MyMiniOrm
         /// <param name="expression">要修改的属性，注意不支持导航属性及其子属性</param>
         /// <param name="ignoreAttribute">是否忽略实体的UpdateIgnore描述。默认为true，既includes中包含的所有属性都会被修改</param>
         /// <returns>受影响的记录数</returns>
-        public int Update<T>(T entity, Expression<Func<T, object>> expression, bool ignoreAttribute = true) where T : IEntity
+        public int UpdateInclude<T>(T entity, Expression<Func<T, object>> expression, bool ignoreAttribute = true) where T : IEntity
         {
             var entityInfo = MyEntityContainer.Get(typeof(T));
             var visitor = new ObjectExpressionVisitor(entityInfo);
             visitor.Visit(expression);
             var include = visitor.GetPropertyList().Select(kv => kv.Key);
-            return Update(entity, include, ignoreAttribute);
+            return UpdateInclude(entity, include, ignoreAttribute);
         }
 
         /// <summary>
