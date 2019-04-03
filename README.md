@@ -35,16 +35,16 @@ public class Clazz : IEntity
 
 ## 实体描述
 
-- ### MyTableAttribute(string tableName) 
+#### MyTableAttribute(string tableName) 
 用于描述实体类，若实体名称与表名不同，需要使用此描述指定表名
 
-- ### MyKeyAttribute(string keyName) 
+#### MyKeyAttribute(string keyName) 
 用于描述实体的主键，若主键列不为Id，需使用词描述指定主键对应的列名
 
-- ### MyColumnAttribute(string ColumnName,bool Ignore,bool InsertIgnore, bool UpdateIgnore) 
+#### MyColumnAttribute(string ColumnName,bool Ignore,bool InsertIgnore, bool UpdateIgnore) 
 列描述，可指定对应的列名，Ignore=true 插入和修改时都忽略此字段，InsertIgnore=true 插入时忽略， UpdateIgnore=true 修改时忽略
 
-- ### MyForeignKeyAttribute(string ForeignKey, string MasterKey) 
+#### MyForeignKeyAttribute(string ForeignKey, string MasterKey) 
 若外键名非 导航属性名+"Id"，则需通过ForeignKey指定，MasterKey默认为Id，若不是通过Id进行关联或关联表的主键名不是Id，则需要通过此MasterKey指定
 
 ## 用法
