@@ -25,12 +25,12 @@ namespace MyMiniOrm.Expressions
             if (props == null || props.Length == 0)
             {
                 Includes = new List<string>();
-                Key = typeof(T).Name;
+                Key = typeof(T).FullName;
             }
             else
             {
                 Includes = props.ToList();
-                Key = typeof(T).Name + "-" + string.Join("-", props.OrderBy(p => p).Distinct());
+                Key = typeof(T).FullName + "-" + string.Join("-", props.OrderBy(p => p).Distinct());
             }
         }
 

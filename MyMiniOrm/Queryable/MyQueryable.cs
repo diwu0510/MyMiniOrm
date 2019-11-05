@@ -232,7 +232,7 @@ namespace MyMiniOrm.Queryable
         /// 把要用到的导航属性的MyEntity缓存到一个List里，不需要每次都要到字典中获取
         private MyEntity GetIncludePropertyEntityInfo(Type type)
         {
-            var entity = _entityCache.FirstOrDefault(e => e.Name == type.FullName);
+            var entity = _entityCache.FirstOrDefault(e => e.FullName == type.FullName);
 
             if (entity != null) return entity;
 

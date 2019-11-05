@@ -14,6 +14,8 @@ namespace MyMiniOrm.Reflections
 
         public string TableName { get; set; }
 
+        public string FullName { get; set; }
+
         public bool IsSoftDelete { get; set; }
 
         public bool IsCreateAudit { get; set; }
@@ -25,6 +27,7 @@ namespace MyMiniOrm.Reflections
         public MyEntity(Type type)
         {
             Name = type.Name;
+            FullName = type.FullName;
             IsSoftDelete = type.IsInstanceOfType(typeof(ISoftDelete));
             IsCreateAudit = type.IsInstanceOfType(typeof(ICreateAudit));
             IsUpdateAudit = type.IsInstanceOfType(typeof(IUpdateAudit));
